@@ -1,20 +1,73 @@
 # Wind Forecast Desk
 
 [![CI](https://github.com/ice-009/data-bricks_swe/actions/workflows/ci.yml/badge.svg)](https://github.com/ice-009/data-bricks_swe/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.12-blue) ![React](https://img.shields.io/badge/react-18-61dafb) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
+[![Live on Vercel](https://img.shields.io/badge/live-data--bricks--swe.vercel.app-000?logo=vercel)](https://data-bricks-swe.vercel.app)
+![Python](https://img.shields.io/badge/python-3.12-blue) ![React](https://img.shields.io/badge/react-18-61dafb) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688) ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
 
 A web app for a UK energy utility's day-ahead power trading desk. It answers two questions for every purchase decision made in **January 2026**:
 
 1. **What did the latest wind forecast say when we had to buy?** For each delivery day it shows the newest Elexon WINDFOR forecast published before the day-ahead auction gate closure (EPEX 09:20 / N2EX 09:50 on D-1), with an uncertainty band and the actual outturn.
 2. **How far can we trust it?** Error metrics (MAE, RMSE, bias, P10/P90), how accuracy changes with lead time, by hour of day, by day, and a bias-adjusted forecast that is about 17% more accurate.
 
-**Live app:** https://data-bricks-swe.vercel.app
+### 🔗 Live app: **https://data-bricks-swe.vercel.app**
 
-| Day-ahead decision | Forecast accuracy |
+![Day-ahead decision view](docs/screenshots/day-ahead.png)
+
+**Contents:** [App tour](#app-tour) · [Quick start](#quick-start) · [Repository layout](#repository-layout) · [Architecture](#architecture) · [Domain & method](#domain-and-method) · [Key findings](#key-findings-january-2026) · [Engineering practices](#engineering-practices) · [Deployment](#deployment) · [Use of AI tools](#use-of-ai-tools)
+
+---
+
+## App tour
+
+All screenshots are from the live deployment, using the real January 2026 Elexon data.
+
+### 1. Day-ahead decision view
+
+Pick a delivery day and a gate closure (EPEX 09:20, N2EX 09:50 or any custom time). The view shows exactly what the desk knew at that moment:
+
+- **Context strip:** when the decision was made, which forecast run was used (here the 07:30 run, 16.5–39.5 h ahead) and when the next run arrived (09:30, 10 minutes *after* EPEX closed).
+- **KPI tiles:** forecast energy for the day, a prudent P10 volume (how much wind risk to cover), the bias-adjusted forecast, the actual outturn and the shortfall.
+- **Chart:** the forecast at the gate (blue) with its P10–P90 band, the bias-adjusted forecast (green, dashed) and the actual FUELHH outturn (orange).
+
+Turning on **Forecast runs after gate** draws every run published after the decision in grey, which shows how far the forecast kept moving after the desk had committed. Hovering gives exact hourly values:
+
+![Day-ahead view with later forecast runs and tooltip](docs/screenshots/day-ahead-runs.png)
+
+### 2. Forecast accuracy
+
+Scores every delivered hour in the period, either *as available at gate closure* or at a *fixed lead time* (0–48 h).
+
+- **KPI tiles:** MAE, bias, RMSE, the 80% error range, and the bias-adjusted MAE.
+- **Procurement callout:** the same metrics translated into what they mean for buying.
+- **Charts:**
+  - accuracy vs lead time, with an EPEX vs N2EX comparison
+  - daily bias
+  - error distribution
+  - error by hour of day
+  - forecast vs actual scatter
+
+![Forecast accuracy view](docs/screenshots/accuracy.png)
+
+### 3. Method & data
+
+How every number is produced: data sources, the "available at the decision" rule, the metric definitions, how the uncertainty band and bias adjustment are built, and known limitations.
+
+![Method and data view](docs/screenshots/method.png)
+
+### Dark mode and mobile
+
+The UI is a frosted-glass design in a single blue hue. It follows the system light or dark setting, and the ☾/☀︎ button in the header switches it manually. Every chart has a **Table** toggle for exact numbers, and the layout works down to phone width. The **Source** button in the header links to this repository.
+
+| Dark mode | Phone (390 px) |
 |---|---|
-| ![Day-ahead view](docs/screenshots/day-ahead.png) | ![Accuracy view](docs/screenshots/accuracy.png) |
+| ![Day-ahead view, dark mode](docs/screenshots/day-ahead-dark.png) | ![Mobile layout](docs/screenshots/mobile.png) |
 
-**Contents:** [Quick start](#quick-start) · [Repository layout](#repository-layout) · [Architecture](#architecture) · [Domain & method](#domain-and-method) · [Key findings](#key-findings-january-2026) · [Engineering practices](#engineering-practices) · [Deployment](#deployment) · [Use of AI tools](#use-of-ai-tools)
+<details>
+<summary>Accuracy view in dark mode</summary>
+
+![Forecast accuracy view, dark mode](docs/screenshots/accuracy-dark.png)
+
+</details>
 
 ---
 
@@ -87,7 +140,7 @@ cd frontend && npm ci && npm run dev
 ├── vercel.json                  Vercel: static React + Python function for /api/*
 ├── Makefile
 ├── .github/workflows/ci.yml     Lint, test, build, docker smoke test
-└── docs/                        Screenshots, video talk track
+└── docs/                        Screenshots (from the live app), video talk track
 ```
 
 ---
@@ -159,7 +212,7 @@ Part of the persistent bias is likely a scope difference: FUELHH is metered outp
 - **Static checks:** ruff (lint + format), TypeScript `strict`.
 - **CI** (GitHub Actions): backend lint and tests, frontend typecheck, tests and build, then a Docker build and container smoke test.
 - **Typed contract:** Pydantic response models (OpenAPI at `/docs`) mirrored by `frontend/src/types.ts`.
-- **Accessibility and UX:** every chart has a table view; colour-blind-validated palette; light and dark themes; responsive down to phone width; times always shown in UK local time.
+- **Accessibility and UX:** every chart has a table view; colour-blind-validated series palette; frosted-glass light and dark themes built from CSS custom properties (one accent hue); responsive down to phone width; times always shown in UK local time.
 - **Config over code:** decision window, gate presets and bias window live in `config.py`, with env overrides (`SNAPSHOT_DIR`, `ALLOW_LIVE_FETCH`, `CORS_ORIGINS`, `STATIC_DIR`).
 
 ---
@@ -168,7 +221,7 @@ Part of the persistent bias is likely a scope difference: FUELHH is metered outp
 
 **Vercel** (static React plus a Python serverless function):
 
-Live at **https://data-bricks-swe.vercel.app**.
+Live at **https://data-bricks-swe.vercel.app**. The Vercel project is connected to this GitHub repo, so every push to `main` deploys to production automatically, and GitHub shows the Vercel deploy status on each commit.
 
 ```bash
 npx vercel --prod    # uses vercel.json: builds frontend/, deploys api/index.py for /api/*

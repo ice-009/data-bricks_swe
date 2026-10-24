@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+# B019: method caches are intentional - WindAnalytics is a process-wide singleton over immutable data.
+ignore = ["B019"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

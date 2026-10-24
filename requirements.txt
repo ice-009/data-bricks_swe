@@ -1,2 +1,6 @@
-# Used by Vercel's Python runtime for api/index.py.
--r backend/requirements.txt
+# Used by Vercel's Python runtime for api/index.py (Vercel's parser does not follow -r includes).
+# Keep in sync with backend/requirements.txt; uvicorn is not needed on serverless.
+fastapi==0.115.6
+pandas==2.3.3
+numpy==2.2.6
+httpx==0.28.1

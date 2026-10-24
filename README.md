@@ -8,7 +8,7 @@ A web app for a UK energy utility's day-ahead power trading desk. It answers two
 1. **What did the latest wind forecast say when we had to buy?** For each delivery day it shows the newest Elexon WINDFOR forecast published before the day-ahead auction gate closure (EPEX 09:20 / N2EX 09:50 on D-1), with an uncertainty band and the actual outturn.
 2. **How far can we trust it?** Error metrics (MAE, RMSE, bias, P10/P90), how accuracy changes with lead time, by hour of day, by day, and a bias-adjusted forecast that is about 17% more accurate.
 
-**Live app:** _<add Vercel/Heroku URL after deploy>_
+**Live app:** https://data-bricks-swe.vercel.app
 
 | Day-ahead decision | Forecast accuracy |
 |---|---|
@@ -80,6 +80,7 @@ cd frontend && npm ci && npm run dev
 │       ├── hooks/useApi.ts      Fetch hook with abort + keep-previous-data
 │       └── format.ts (+ test)   UK-time and GW/GWh formatting
 ├── api/index.py                 Vercel serverless entrypoint (re-exports the FastAPI app)
+├── requirements.txt             Python deps for the Vercel function
 ├── Dockerfile                   Multi-stage: build React, run uvicorn (Heroku / any container host)
 ├── docker-compose.yml
 ├── heroku.yml                   Heroku container deploy
@@ -167,10 +168,13 @@ Part of the persistent bias is likely a scope difference: FUELHH is metered outp
 
 **Vercel** (static React plus a Python serverless function):
 
+Live at **https://data-bricks-swe.vercel.app**.
+
 ```bash
-npm i -g vercel
-vercel --prod        # uses vercel.json: builds frontend/, deploys api/index.py for /api/*
+npx vercel --prod    # uses vercel.json: builds frontend/, deploys api/index.py for /api/*
 ```
+
+`vercel.json` pins `"framework": "vite"`. Without it, Vercel detects the root `requirements.txt` as a pure Python app and routes every path to the function. The root `requirements.txt` lists the backend dependencies inline because Vercel's parser does not follow `-r` includes.
 
 **Heroku** (container):
 

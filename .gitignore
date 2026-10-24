@@ -14,3 +14,4 @@ frontend/dist/
 .DS_Store
 .env
 .vercel
+.env*
